@@ -1,2 +1,7 @@
-# serverless-functions
-Serverless functions for supporting alf.io extensions
+# Alf.io Serverless Functions
+This repository contains Go-functions, designed to support some of ours [Extensions](git@github.com:alfio-event/serverless-functions.git)
+
+## Sponsor
+This project is sponsored by:
+
+[![Swicket.io](.img/swicket-logo.png)](https://swicket.io)
