@@ -1,5 +1,5 @@
 # Alf.io Serverless Functions
-This repository contains Go-functions, designed to support some of our [Extensions](git@github.com:alfio-event/serverless-functions.git)
+This repository contains Go-functions, designed to support some of our [Extensions](https://github.com/alfio-event/alf.io-extensions)
 
 ## Sponsor
 This project is sponsored by:
