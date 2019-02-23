@@ -7,8 +7,7 @@ import (
 )
 
 func TestProcessFileContent(t *testing.T) {
-	var text = `cod_amm	cod_ou	cod_uni_ou	des_ou	regione	provincia	comune	indirizzo	cap	cf	dt_verifica_cf	data_avvio_sfe
-	A	B	C	D	E	F	G	H	I	J	K	L`
+	var text = "cod_amm	cod_ou	cod_uni_ou	des_ou	regione	provincia	comune	indirizzo	cap	cf	dt_verifica_cf	data_avvio_sfe\nA	B	C	D	E	F	G	H	I	J	K	L"
 	res := processFileContent(strings.NewReader(text))
 	if len(res) != 1 {
 		t.Error("Wrong outer length. Expected 1, actual", len(res))

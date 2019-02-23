@@ -1,6 +1,7 @@
 package function
 
 import (
+	"bufio"
 	"compress/gzip"
 	"context"
 	"encoding/csv"
@@ -9,7 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"text/scanner"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -75,12 +76,11 @@ func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
 
 func processFileContent(src io.Reader) [][]string {
 	var (
-		row, col int
-		s        scanner.Scanner
-		content  [][]string
+		row     int
+		content [][]string
 	)
-	s.Init(src)
-	s.Whitespace = 1 << '\t'
+
+	rowScanner := bufio.NewScanner(src)
 
 	// The file contains the following information:
 	// 12 colums:
@@ -89,25 +89,13 @@ func processFileContent(src io.Reader) [][]string {
 	// 	- cod_uni_ou, which is the Addressee Code
 	// 	- cf, which is the "Codice Fiscale" (a sort of Tax ID, but not really)
 
-	var parsedRow []string
-
-	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		if tok == '\n' {
-			if row > 0 {
-				content = append(content, parsedRow)
-			}
-			parsedRow = nil
-			row++
-			col = 0
-		} else if row > 0 {
-			if col == 2 || col == 9 {
-				parsedRow = append(parsedRow, s.TokenText())
-			}
-			col++
+	for rowScanner.Scan() {
+		if row > 0 {
+			row := strings.Split(rowScanner.Text(), "\t")
+			parsedRow := []string{row[2], row[9]}
+			content = append(content, parsedRow)
 		}
-	}
-	if parsedRow != nil {
-		content = append(content, parsedRow)
+		row++
 	}
 	return content
 }
