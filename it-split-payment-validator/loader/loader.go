@@ -1,6 +1,7 @@
 package function
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/csv"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"google.golang.org/appengine/log"
 )
 
+const fileName = "split-payment-def.gz"
+
 // PubSubMessage is the payload of a Pub/Sub event.
 type PubSubMessage struct {
 	Data []byte `json:"data"`
@@ -21,6 +24,18 @@ type PubSubMessage struct {
 // OpenDataLoader is a function triggered by a GCP Pub/Sub event, that loads and parses content
 // from the Italian Government's Open Data directory (https://www.indicepa.gov.it/documentale/n-opendata.php)
 func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Criticalf(ctx, "failed to create client: %v", err)
+	}
+
+	bucketName, err := file.DefaultBucketName(ctx)
+
+	if err != nil {
+		log.Criticalf(ctx, "Cannot retrieve bucket name: %v", err)
+	}
+
 	resp, err := http.Get("https://www.indicepa.gov.it/public-services/opendata-read-service.php?dstype=FS&filename=serv_fatt.txt")
 	if err == nil {
 		log.Errorf(ctx, "Cannot get file: %v", err)
@@ -29,32 +44,25 @@ func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
 	defer resp.Body.Close()
 
 	content := processFileContent(resp.Body)
-	bucketName, err := file.DefaultBucketName(ctx)
-
-	if err != nil {
-		log.Errorf(ctx, "Cannot retrieve bucket name: %v", err)
-		return err
-	}
-
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		log.Errorf(ctx, "failed to create client: %v", err)
-		return err
-	}
-
-	defer client.Close()
 
 	t := time.Now().UTC()
-	wc := client.Bucket(bucketName).Object("split-payment-def.csv").NewWriter(ctx)
+	wc := client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
 	wc.ContentType = "text/plain"
 	wc.Metadata = map[string]string{
 		"creation-date": t.String(),
 	}
 
-	err = createCSV(wc, content)
+	writer := gzip.NewWriter(wc)
+	err = createCSV(writer, content)
 
 	if err != nil {
 		log.Errorf(ctx, "failed to create CSV: %v", err)
+		return err
+	}
+
+	err = writer.Flush()
+	if err != nil {
+		log.Errorf(ctx, "failed to flush GZip stream: %v", err)
 		return err
 	}
 
