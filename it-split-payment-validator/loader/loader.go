@@ -39,7 +39,7 @@ func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
 	}
 
 	resp, err := http.Get("https://www.indicepa.gov.it/public-services/opendata-read-service.php?dstype=FS&filename=serv_fatt.txt")
-	if err == nil {
+	if err != nil {
 		log.Fatalf("Cannot get file: %v", err)
 		return err
 	}
