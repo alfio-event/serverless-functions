@@ -14,7 +14,7 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-var db map[string]string
+var db = map[string]string{}
 var client *storage.Client
 var bucketName string
 var ctx = context.Background()
