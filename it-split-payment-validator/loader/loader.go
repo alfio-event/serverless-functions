@@ -50,7 +50,7 @@ func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
 
 	t := time.Now().UTC()
 	wc := client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
-	wc.ContentType = "text/plain"
+	wc.ContentType = "application/gzip"
 	wc.Metadata = map[string]string{
 		"creation-date": t.String(),
 	}
@@ -63,9 +63,15 @@ func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
 		return err
 	}
 
-	err = writer.Flush()
+	err = writer.Close()
 	if err != nil {
 		log.Fatalf("failed to flush GZip stream: %v", err)
+		return err
+	}
+
+	err = wc.Close()
+	if err != nil {
+		log.Fatalf("failed to close GCS stream: %v", err)
 		return err
 	}
 
