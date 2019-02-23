@@ -4,14 +4,15 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/csv"
+	"errors"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"text/scanner"
 	"time"
 
 	"cloud.google.com/go/storage"
-	"google.golang.org/appengine/file"
-	"google.golang.org/appengine/log"
 )
 
 const fileName = "split-payment-def.gz"
@@ -27,18 +28,19 @@ func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Criticalf(ctx, "failed to create client: %v", err)
+		log.Fatalf("failed to create client: %v", err)
+		return err
 	}
 
-	bucketName, err := file.DefaultBucketName(ctx)
+	bucketName, exists := os.LookupEnv("BUCKET_NAME")
 
-	if err != nil {
-		log.Criticalf(ctx, "Cannot retrieve bucket name: %v", err)
+	if !exists {
+		return errors.New("Cannot retrieve bucket name. Env Variable BUCKET_NAME does not exist")
 	}
 
 	resp, err := http.Get("https://www.indicepa.gov.it/public-services/opendata-read-service.php?dstype=FS&filename=serv_fatt.txt")
 	if err == nil {
-		log.Errorf(ctx, "Cannot get file: %v", err)
+		log.Fatalf("Cannot get file: %v", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -56,17 +58,17 @@ func OpenDataLoader(ctx context.Context, m PubSubMessage) error {
 	err = createCSV(writer, content)
 
 	if err != nil {
-		log.Errorf(ctx, "failed to create CSV: %v", err)
+		log.Fatalf("failed to create CSV: %v", err)
 		return err
 	}
 
 	err = writer.Flush()
 	if err != nil {
-		log.Errorf(ctx, "failed to flush GZip stream: %v", err)
+		log.Fatalf("failed to flush GZip stream: %v", err)
 		return err
 	}
 
-	log.Infof(ctx, "File created successfully at %v", t.String())
+	log.Printf("File created successfully at %v", t.String())
 
 	return err
 }
