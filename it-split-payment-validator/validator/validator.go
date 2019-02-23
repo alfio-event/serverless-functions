@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"cloud.google.com/go/storage"
-	"google.golang.org/appengine/file"
 )
 
 var db map[string]string
@@ -42,16 +41,18 @@ func evaluateErrors(err error) {
 
 func performInit() error {
 	var err error
+	var exists bool
+	bucketName, exists = os.LookupEnv("BUCKET_NAME")
+
+	if !exists {
+		return errors.New("Cannot retrieve bucket name. Env Variable BUCKET_NAME does not exist")
+	}
+
 	client, err = storage.NewClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	bucketName, err = file.DefaultBucketName(ctx)
-
-	if err != nil {
-		return err
-	}
 	return loadDataFromStorage()
 }
 
